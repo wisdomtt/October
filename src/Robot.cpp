@@ -1,6 +1,7 @@
 #include "WPILib.h"
 #include "DeadSwipe.h"
 #include "F310.h"
+#include "Functions.h"
 class Robot : public SampleRobot
 {
 	float SafetyUpElevator;
@@ -55,10 +56,8 @@ class Robot : public SampleRobot
 	Joystick *oiRight;
 	F310 *oiGamepad;
 
-	DigitalInput *TriggerTopLeft;
-	DigitalInput *TriggerTopRight;
-	DigitalInput *TriggerBotLeft;
-	DigitalInput *TriggerBotRight;
+	Encoder *enRight;
+	Encoder *enLeft;
 
 public:
 
@@ -114,47 +113,20 @@ public:
 		iLeft = new Talon(2);
 		iRight= new Talon(3);
 
-		TriggerTopLeft = new DigitalInput(0);
-		TriggerTopRight = new DigitalInput(1);
-		TriggerBotLeft = new DigitalInput(3);
-		TriggerBotRight = new DigitalInput(4);
+		enLeft = new Encoder(6, 7, false, Encoder::k4X);
+		enRight = new Encoder(8, 9, false, Encoder::k4X);
 }
-
 	void Autonomous(void)
 	{
 		dbDrive->SetSafetyEnabled(false);
 		SmartDashboard::PutNumber("AutonVersion", auton);
 		switch(auton){
-		case 0:
-			{
-				dbDrive->TankDrive(1.0, 1.0, true);
-				Wait(3.0);
-				//Insert Encoder math here
-				dbDrive->TankDrive(0.0,0.0, true);
-				break;
-			}
-		case 1:
-			{
-				//pretend we're at the bin
-				dbDrive->TankDrive(1.0, 1.0, true);
-				Wait(3.0);
-				//Insert Encoder math here
-				dbDrive->TankDrive(0.0,0.0, true);
-				epLeft->Set(DoubleSolenoid::kForward);
-				epRight->Set(DoubleSolenoid::kForward);
-				while(!TriggerTopLeft->Get() && !TriggerTopRight->Get()){
-					eLeft->Set(1.0);
-					eRight->Set(1.0);
+			default:
+				{
+					 ElevatorDown(enLeft, enRight, eLeft, eRight, false);
 				}
-				eLeft->Set(0.0);
-				eRight->Set(0.0);
-				break;
-			}
-		default:
-			{
-				break;
-			}
 		}
+
 	}
 
 	void OperatorControl(void)
@@ -165,8 +137,16 @@ public:
 			//Press A, Elevator goes down if you didn't press Y
 			//Press Both and Elevator stops
 
-
-
+				//Constantly Updates Elevator Encoders
+				SmartDashboard::PutNumber("Left Elevator Encoder", enLeft->GetDistance());
+				SmartDashboard::PutNumber("Right Elevator Encoder", enRight->GetDistance());
+				//Constantly Updates Drive Base Encoders
+				SmartDashboard::PutNumber("Drive Base Encoder Left", dbLeftEncoder->GetDistance());
+				SmartDashboard::PutNumber("Drive Base Encoder Middle", dbMidEncoder->GetDistance());
+				SmartDashboard::PutNumber("Drive Base Encoder Right", dbRightEncoder->GetDistance());
+				//Elevator values
+				SmartDashboard::PutNumber("SafetyUpElevator (Ask A Programmer)", SafetyUpElevator);
+				SmartDashboard::PutNumber("SafetyDownElevator (Ask A Programmer)", SafetyDownElevator);
 				if(oiGamepad->GetButton(F310::kYButton) &&
 						!(oiGamepad->GetButton(F310::kAButton)))
 				{
@@ -185,23 +165,22 @@ public:
 					eLeft->Set(0.0);
 					eRight->Set(0.0);
 				}
-
-
-
-
-				if(TriggerTopLeft->Get() && TriggerTopRight->Get()){
-					SafetyUpElevator = 0.0;
+				if((enRight->GetDistance() && enLeft->GetDistance()) > 24)
+				{
+					SafetyUpElevator = 0;
 				}
-				else if(!TriggerTopLeft->Get() && !TriggerTopRight->Get()){
-					SafetyUpElevator = 1.0;
+				else
+				{
+					SafetyUpElevator = 1;
 				}
-				if(TriggerBotLeft->Get() && TriggerBotRight->Get()){
-					SafetyDownElevator = 0.0;
+				if((enRight->GetDistance() && enLeft->GetDistance()) < 0)
+				{
+					SafetyDownElevator = 0;
 				}
-				else if(!TriggerBotLeft->Get() && !TriggerBotRight->Get()){
-					SafetyDownElevator = 1.0;
+				else
+				{
+					SafetyDownElevator = 1;
 				}
-
 
 			}
 	}
