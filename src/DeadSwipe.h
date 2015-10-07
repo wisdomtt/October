@@ -23,9 +23,15 @@
 #define ELEVATOR_DIAMETER 11/8
 #define ELEVATOR_CIRCUMFERENCE PI * ELEVATOR_DIAMETER
 #define ELEVATOR_DISTANCE_PER_PULSE ELEVATOR_CIRCUMFERENCE / (ENCODER_PULSE_PER_REV * ELEVATOR_GEAR_RATIO)
-//encoder->SetDistancePerPulse(ELEVATOR_DISTANCE_PER_PULSE)
 
-
+#define L_OPEN 0
+#define R_OPEN 1
+#define L_CLOSE 2
+#define R_CLOSE 3
+#define B_OPEN 4
+#define B_CLOSE 5
+#define up  true
+#define down  false
 
 
 #endif /* DEADSWIPE_H_ */

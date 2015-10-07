@@ -118,15 +118,19 @@ public:
 }
 	void Autonomous(void)
 	{
-		dbDrive->SetSafetyEnabled(false);
-		SmartDashboard::PutNumber("AutonVersion", auton);
-		switch(auton){
-			default:
+		while(IsEnabled() && IsAutonomous())
 				{
-					 ElevatorDown(enLeft, enRight, eLeft, eRight, false);
+					this->Debug();
+					dbDrive->SetSafetyEnabled(false);
+					SmartDashboard::PutNumber("AutonVersion", auton);
+						switch(auton)
+						{
+							default:
+								{
+									 ElevatorDown(enLeft, enRight, eLeft, eRight, up);
+								}
+							}
 				}
-		}
-
 	}
 
 	void OperatorControl(void)
@@ -137,16 +141,6 @@ public:
 			//Press A, Elevator goes down if you didn't press Y
 			//Press Both and Elevator stops
 
-				//Constantly Updates Elevator Encoders
-				SmartDashboard::PutNumber("Left Elevator Encoder", enLeft->GetDistance());
-				SmartDashboard::PutNumber("Right Elevator Encoder", enRight->GetDistance());
-				//Constantly Updates Drive Base Encoders
-				SmartDashboard::PutNumber("Drive Base Encoder Left", dbLeftEncoder->GetDistance());
-				SmartDashboard::PutNumber("Drive Base Encoder Middle", dbMidEncoder->GetDistance());
-				SmartDashboard::PutNumber("Drive Base Encoder Right", dbRightEncoder->GetDistance());
-				//Elevator values
-				SmartDashboard::PutNumber("SafetyUpElevator (Ask A Programmer)", SafetyUpElevator);
-				SmartDashboard::PutNumber("SafetyDownElevator (Ask A Programmer)", SafetyDownElevator);
 				if(oiGamepad->GetButton(F310::kYButton) &&
 						!(oiGamepad->GetButton(F310::kAButton)))
 				{
@@ -182,9 +176,135 @@ public:
 					SafetyDownElevator = 1;
 				}
 
+				this->Debug();
+
+							if(oiGamepad->GetButton(F310::kXButton) == true)
+							{
+								this->ePneumaticControl(B_CLOSE);
+							}
+
+							if(oiGamepad->GetButton(F310::kBButton) == true)
+							{
+								this->ePneumaticControl(B_OPEN);
+							}
+
+							if(oiGamepad->GetButton(F310::kXButton) && oiGamepad->GetButton(F310::kBButton))
+							{
+								// do nothing.
+							}
+							dbDrive->TankDrive(oiLeft->GetY(), oiRight->GetY());
+							if (oiRight->GetRawButton(1) == true)
+							{
+								this->HDrive(oiRight->GetX());
+							}
+
+
 			}
 	}
 
+	// h drive function
+	void HDrive(float speed)
+	{
+		dbMiddleLeft->Set(speed);
+		dbMiddleRight->Set(speed);
+	}
+
+	// elevator pneumatic function
+	void ePneumaticControl(int x)
+	{
+		switch(x)
+		{
+		case L_OPEN:
+			this->epLeft->Set(DoubleSolenoid::kReverse);
+			break;
+		case L_CLOSE:
+			this->epLeft->Set(DoubleSolenoid::kForward);
+			break;
+		case R_OPEN:
+			this->epRight->Set(DoubleSolenoid::kReverse);
+			break;
+		case R_CLOSE:
+			this->epRight->Set(DoubleSolenoid::kForward);
+			break;
+		case B_OPEN:
+			this->epLeft->Set(DoubleSolenoid::kReverse);
+			this->epRight->Set(DoubleSolenoid::kReverse);
+			break;
+		case B_CLOSE:
+			this->epLeft->Set(DoubleSolenoid::kForward);
+			this->epRight->Set(DoubleSolenoid::kForward);
+			break;
+		default:
+			break;
+		}
+	}
+
+	// intake pnematic function
+	void iPneumaticControl(int x)
+		{
+			switch(x)
+			{
+			case L_OPEN:
+				this->ipLeft->Set(DoubleSolenoid::kReverse);
+				break;
+			case L_CLOSE:
+				this->ipLeft->Set(DoubleSolenoid::kForward);
+				break;
+			case R_OPEN:
+				this->ipRight->Set(DoubleSolenoid::kReverse);
+				break;
+			case R_CLOSE:
+				this->ipRight->Set(DoubleSolenoid::kForward);
+				break;
+			case B_OPEN:
+				this->ipLeft->Set(DoubleSolenoid::kReverse);
+				this->ipRight->Set(DoubleSolenoid::kReverse);
+				break;
+			case B_CLOSE:
+				this->ipLeft->Set(DoubleSolenoid::kForward);
+				this->ipRight->Set(DoubleSolenoid::kForward);
+				break;
+			default:
+				break;
+			}
+		}
+	// drive train debug function
+	void dbDebug()
+	{
+		SmartDashboard::PutNumber("dbMiddle:", dbMidEncoder->GetDistance());
+		SmartDashboard::PutNumber("dbLeft:", dbLeftEncoder->GetDistance());
+		SmartDashboard::PutNumber("dbRight:", dbRightEncoder->GetDistance());
+		SmartDashboard::PutNumber("dbGyro:", dbGyro->GetAngle());
+	}
+
+	// elevator debug function
+	void eDebug()
+	{
+		SmartDashboard::PutNumber("eLeft", enLeft->GetDistance());
+		SmartDashboard::PutNumber("eRight", enRight->GetDistance());
+	}
+	void DebugTeleop()
+	{
+
+		//Constantly Updates Elevator Encoders
+		SmartDashboard::PutNumber("Left Elevator Encoder", enLeft->GetDistance());
+		SmartDashboard::PutNumber("Right Elevator Encoder", enRight->GetDistance());
+
+		//Constantly Updates Drive Base Encoders
+		SmartDashboard::PutNumber("Drive Base Encoder Left", dbLeftEncoder->GetDistance());
+		SmartDashboard::PutNumber("Drive Base Encoder Middle", dbMidEncoder->GetDistance());
+		SmartDashboard::PutNumber("Drive Base Encoder Right", dbRightEncoder->GetDistance());
+
+		//Elevator values
+		SmartDashboard::PutNumber("SafetyUpElevator (Ask A Programmer)", SafetyUpElevator);
+		SmartDashboard::PutNumber("SafetyDownElevator (Ask A Programmer)", SafetyDownElevator);
+	}
+	void Debug()
+	{
+		this->dbDebug();
+		this->eDebug();
+		this->DebugTeleop();
+	}
 	void Disabled(void)
 	{
 
