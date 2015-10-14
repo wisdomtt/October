@@ -1,5 +1,5 @@
 #include  "WPILib.h"
-void ElevatorDown(Encoder *enLeft, Encoder*enRight, Talon *Left, Talon *Right, bool Direction)
+void ElevatorMove(Encoder *enLeft, Encoder*enRight, Talon *Left, Talon *Right, bool Direction)
 {
 	if(Direction)
 	{

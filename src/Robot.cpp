@@ -1,11 +1,14 @@
 #include "WPILib.h"
 #include "DeadSwipe.h"
 #include "F310.h"
+#include <iostream>
 #include "Functions.h"
+using namespace std;
 class Robot : public SampleRobot
 {
 	float SafetyUpElevator;
 	float SafetyDownElevator;
+	float Distance;
 	// boolean values for elevator limit switches
 	bool TopFinish;
 	bool BotFinish;
@@ -62,7 +65,8 @@ class Robot : public SampleRobot
 public:
 
 	Robot()
-{
+	{
+		Distance = 0;
 		auton = 0;
 		SafetyUpElevator = 1.0;
 		SafetyDownElevator = 1.0;
@@ -121,15 +125,16 @@ public:
 		while(IsEnabled() && IsAutonomous())
 				{
 					this->Debug();
+					dbGyro->Reset();
 					dbDrive->SetSafetyEnabled(false);
-					SmartDashboard::PutNumber("AutonVersion", auton);
-						switch(auton)
-						{
-							default:
-								{
-									 ElevatorDown(enLeft, enRight, eLeft, eRight, up);
-								}
+					SmartDashboard::GetNumber("Choose auton", auton);
+					switch(auton){
+						default:
+							{
+								ElevatorMove(enLeft, enRight, eLeft, eRight, down);
+								Forward(dbDrive, Distance, dbLeftEncoder, dbRightEncoder);
 							}
+					}
 				}
 	}
 
@@ -178,25 +183,27 @@ public:
 
 				this->Debug();
 
-							if(oiGamepad->GetButton(F310::kXButton) == true)
-							{
-								this->ePneumaticControl(B_CLOSE);
-							}
+				if(oiGamepad->GetButton(F310::kXButton) == true)
+					{
+						this->ePneumaticControl(B_CLOSE);
+					}
 
-							if(oiGamepad->GetButton(F310::kBButton) == true)
-							{
-								this->ePneumaticControl(B_OPEN);
-							}
+					if(oiGamepad->GetButton(F310::kBButton) == true)
+						{
+							this->ePneumaticControl(B_OPEN);
+						}
 
-							if(oiGamepad->GetButton(F310::kXButton) && oiGamepad->GetButton(F310::kBButton))
-							{
+					if(oiGamepad->GetButton(F310::kXButton) && oiGamepad->GetButton(F310::kBButton))
+						{
 								// do nothing.
-							}
-							dbDrive->TankDrive(oiLeft->GetY(), oiRight->GetY());
-							if (oiRight->GetRawButton(1) == true)
-							{
-								this->HDrive(oiRight->GetX());
-							}
+						}
+
+
+					dbDrive->TankDrive(oiLeft->GetY(), oiRight->GetY());
+					if (oiRight->GetRawButton(1) == true)
+						{
+							this->HDrive(oiRight->GetX());
+						}
 
 
 			}
@@ -268,6 +275,33 @@ public:
 				break;
 			}
 		}
+
+
+	void Forward(RobotDrive *drive, float forward, Encoder *A, Encoder *B)
+	{
+		while(forward < ((A->GetDistance() + B->GetDistance())/2))
+		{
+			drive->TankDrive(1.0, 1.0);
+		}
+		drive->TankDrive(0.0,0.0);
+		A->Reset();
+		B->Reset();
+	}
+	void GYROTurn(Gyro *gyro, float turn, RobotDrive *drive)
+	{
+		while(-5 < turn < 5)
+		{
+			if(turn > 0)
+			{
+				drive->TankDrive(0.7, 0.0);
+			}
+			else if(turn < 0)
+			{
+				drive->TankDrive(0.0,0.7);
+			}
+		}
+		drive->TankDrive(0.0, 0.0);
+	}
 	// drive train debug function
 	void dbDebug()
 	{
@@ -285,6 +319,7 @@ public:
 	}
 	void DebugTeleop()
 	{
+		SmartDashboard::GetNumber("Inches Forward", Distance);
 
 		//Constantly Updates Elevator Encoders
 		SmartDashboard::PutNumber("Left Elevator Encoder", enLeft->GetDistance());
