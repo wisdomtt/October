@@ -34,6 +34,7 @@ class Robot : public SampleRobot
 	Encoder *dbRightEncoder; // DIO 2 and 3
 	Encoder *dbMidEncoder; // DIO 4 and 5
 
+	Timer *clock;
 	// gyro declaration - gyros allow us to measure how much an object has rotated along an axis
 	// NOTE: gyros can(as of this writing) ONLY be used on AIN 0 and 1
 	Gyro *dbGyro; // AIN 0
@@ -67,6 +68,8 @@ public:
 
 	Robot()
 	{
+		clock = new Timer();
+
 		autoChooser = new SendableChooser();
 		Distance = 0;
 		auton = 0;
@@ -133,7 +136,7 @@ public:
 							case 1:
 							{
 								ElevatorMove(ElevatorLeft, ElevatorRight,
-										ElevatorTalonLeft, ElevatorTalonRight, down);
+										ElevatorTalonLeft, ElevatorTalonRight, down, clock);
 								break;
 							}
 							case 2:
@@ -141,7 +144,7 @@ public:
 							default:
 							{
 								ElevatorMove(ElevatorLeft, ElevatorRight,
-									ElevatorTalonLeft, ElevatorTalonRight, down);
+									ElevatorTalonLeft, ElevatorTalonRight, down, clock);
 								break;
 							}
 						}
@@ -347,7 +350,7 @@ public:
 			SmartDashboard::PutNumber("SafetyUpElevator (Ask A Programmer)", SafetyUpElevator);
 			SmartDashboard::PutNumber("SafetyDownElevator (Ask A Programmer)", SafetyDownElevator);
 		}
-		void Robot::Debug()
+		void Debug()
 		{
 			this->dbDebug();
 			this->eDebug();

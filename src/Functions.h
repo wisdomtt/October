@@ -1,5 +1,18 @@
 #include  "WPILib.h"
 #include "DeadSwipe.h"
+
+float EncoderRevolutions(Encoder *enc)
+{
+	return enc->GetDistance()/EDPP;
+}
+
+float SuperGetDistance(Encoder *enc, bool direction)
+{
+	if(direction)
+	return enc->GetDistance()+EncoderRevolutions(enc)*(ropethickness);
+	else
+	return enc->GetDistance()-EncoderRevolutions(enc)*(ropethickness);
+}
 void ElevatorMove(Encoder *enLeft, Encoder*enRight, Talon *Left, Talon *Right, bool Direction, Timer *clock)
 {
 	clock->Reset();
@@ -31,16 +44,4 @@ void ElevatorMove(Encoder *enLeft, Encoder*enRight, Talon *Left, Talon *Right, b
 				Left->Set(0.0);
 				Right->Set(0.0);
 	}
-}
-float EncoderRevolutions(Encoder *enc)
-{
-	return enc->GetDistance()/EDPP;
-}
-
-float SuperGetDistance(Encoder *enc, bool direction)
-{
-	if(direction)
-	return enc->GetDistance()+EncoderRevolutions(enc)(ropethickness);
-	else
-	return enc->GetDistance()-EncoderRevolutions(enc)(ropethickness);
 }
