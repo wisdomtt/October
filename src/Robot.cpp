@@ -7,9 +7,6 @@
 using namespace std;
 class Robot : public SampleRobot
 {
-	float SafetyUpElevator;
-	float SafetyDownElevator;
-	float Distance;
 	// boolean values for elevator limit switches
 	bool TopFinish;
 	bool BotFinish;
@@ -50,8 +47,8 @@ class Robot : public SampleRobot
 
 	// intake declarations
 
-	Talon *iLeft; // pwm 2
-	Talon *iRight; // pwm 3
+	Talon *iLeft; // pwm 1
+	Talon *iRight; // pwm 0
 
 	DoubleSolenoid *ipLeft; // PCM ports 4 and 5
 	DoubleSolenoid *ipRight; // PCM ports 6 and 7
@@ -66,6 +63,13 @@ class Robot : public SampleRobot
 
 public:
 
+
+	float SafetyUpElevator;
+	float SafetyDownElevator;
+	float Distance;
+	float rElevatorDistance;
+	float lElevatorDistance;
+
 	Robot()
 	{
 		clock = new Timer();
@@ -76,6 +80,8 @@ public:
 		SafetyUpElevator = 1.0;
 		SafetyDownElevator = 1.0;
 		ElevatorControl = false;
+		rElevatorDistance = 0;
+		lElevatorDistance = 0;
 
 		TopFinish = false;
 		BotFinish = false;
@@ -110,20 +116,24 @@ public:
 		dbGyro = new Gyro(0);
 		dbGyro->SetSensitivity(0.007);
 
-		epLeft = new DoubleSolenoid(0, 0, 1);
-		epRight = new DoubleSolenoid(0, 2, 3);
 
-		ElevatorTalonLeft = new Talon(0);
-		ElevatorTalonRight = new Talon(1);
 
-		ipLeft = new DoubleSolenoid(0, 4, 5);
-		ipRight = new DoubleSolenoid(0, 6, 7);
+		ElevatorTalonLeft = new Talon(2);
+		ElevatorTalonRight = new Talon(3);
 
-		iLeft = new Talon(2);
-		iRight= new Talon(3);
+
+		iLeft = new Talon(1);
+		iRight= new Talon(0);
 
 		ElevatorRight = new Encoder(6, 7, false, Encoder::k4X);
 		ElevatorLeft = new Encoder(8, 9, false, Encoder::k4X);
+
+		//Pneumatics i:intake e:elevator
+		ipLeft = new DoubleSolenoid(0, 1, 6);
+		ipRight = new DoubleSolenoid(0, 0, 7);
+		epLeft = new DoubleSolenoid(0, 2, 5);
+		epRight = new DoubleSolenoid(0, 3, 4);
+
 }
 	void Autonomous(void)
 	{
@@ -162,58 +172,56 @@ public:
 			//Press A, Elevator goes down if you didn't press Y
 			//Press Both and Elevator stops
 
-				if(oiGamepad->GetButton(F310::kYButton) &&
-						!(oiGamepad->GetButton(F310::kAButton)))
-				{
-					ElevatorTalonLeft->Set(1.0 * SafetyUpElevator);
-					ElevatorTalonRight->Set(1.0*SafetyUpElevator);
-				}
-				else if(oiGamepad->GetButton(F310::kAButton) &&
-						!(oiGamepad->GetButton(F310::kYButton)))
-				{
-					ElevatorTalonLeft->Set(-1.0*SafetyDownElevator);
-					ElevatorTalonRight->Set(-1.0*SafetyDownElevator);
-				}
-				else if(oiGamepad->GetButton(F310::kAButton) &&
-						(oiGamepad->GetButton(F310::kYButton)))
-				{
-					ElevatorTalonLeft->Set(0.0);
-					ElevatorTalonRight->Set(0.0);
-				}
-				if((ElevatorRight->GetDistance() && ElevatorLeft->GetDistance()) > 24)
-				{
-					SafetyUpElevator = 0;
-				}
-				else
-				{
-					SafetyUpElevator = 1;
-				}
-				if((ElevatorRight->GetDistance() && ElevatorLeft->GetDistance()) < 0)
-				{
-					SafetyDownElevator = 0;
-				}
-				else
-				{
-					SafetyDownElevator = 1;
-				}
+			if(oiGamepad->GetButton(F310::kStartButton))
+						{
+							ElevatorRight->Encoder::Reset();
+							ElevatorLeft->Encoder::Reset();
+						}
+
+						if(oiGamepad->GetButton(F310::kAButton))
+						{
+							rElevatorDistance = ElevatorRight->Encoder::GetDistance();
+							lElevatorDistance = ElevatorLeft->Encoder::GetDistance();
+
+							if((rElevatorDistance < 26) && (lElevatorDistance < 26))
+							{
+								ElevatorTalonRight->Talon::Set(1.0);
+								ElevatorTalonLeft->Talon::Set(1.0);
+							}
+
+							if((rElevatorDistance >= 26) && (lElevatorDistance >= 26))
+							{
+								ElevatorTalonRight->Talon::Set(0.0);
+								ElevatorTalonLeft->Talon::Set(0.0);
+							}
+						}
+
+						if(oiGamepad->GetButton(F310::kBButton))
+						{
+							rElevatorDistance = ElevatorRight->Encoder::GetDistance();
+							lElevatorDistance = ElevatorLeft->Encoder::GetDistance();
+
+							if((rElevatorDistance > 0) && (lElevatorDistance > 0))
+							{
+								ElevatorTalonRight->Talon::Set(-0.5);
+								ElevatorTalonLeft->Talon::Set(-0.5);
+							}
+
+						}
+
+						if(oiGamepad->GetButton(F310::kXButton))
+						{
+							iLeft->Talon::Set(0.5);
+							iRight->Talon::Set(0.5);
+						}
+
+						if(oiGamepad->GetButton(F310::kYButton))
+						{
+							iLeft->Talon::Set(0.0);
+							iRight->Talon::Set(0.0);
+						}
 
 				this->Debug();
-
-				if(oiGamepad->GetButton(F310::kXButton) == true)
-					{
-						this->ePneumaticControl(B_CLOSE);
-					}
-
-					if(oiGamepad->GetButton(F310::kBButton) == true)
-						{
-							this->ePneumaticControl(B_OPEN);
-						}
-
-					if(oiGamepad->GetButton(F310::kXButton) && oiGamepad->GetButton(F310::kBButton))
-						{
-								// do nothing.
-						}
-
 
 					dbDrive->TankDrive(oiLeft->GetY(), oiRight->GetY());
 					if (oiRight->GetRawButton(1) == true)
