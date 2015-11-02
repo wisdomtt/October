@@ -58,8 +58,8 @@ class Robot : public SampleRobot
 	Joystick *oiRight;
 	F310 *oiGamepad;
 
-	Encoder *ElevatorRight;
-	Encoder *ElevatorLeft;
+	Relay* ElevatorRight;
+	Relay* ElevatorLeft;
 
 public:
 
@@ -140,27 +140,9 @@ public:
 			int aSelectedMode = (int) autoChooser->GetSelected();
 					while(IsEnabled() && IsAutonomous())
 					{
-						this->Debug();
-						switch (aSelectedMode)
-						{
-							case 1:
-							{
-								ElevatorMove(ElevatorLeft, ElevatorRight,
-										ElevatorTalonLeft, ElevatorTalonRight, down, clock);
-								break;
-							}
-							case 2:
-								break;
-							default:
-							{
-								ElevatorMove(ElevatorLeft, ElevatorRight,
-									ElevatorTalonLeft, ElevatorTalonRight, down, clock);
-								break;
-							}
-						}
-						this->Debug();
 
-					} // end of while loop
+
+					}
 
 	}
 
@@ -168,66 +150,40 @@ public:
 	{
 		while (IsOperatorControl() && IsEnabled())
 			{
-			//Press Y, Elevator goes up if you didn't press A
-			//Press A, Elevator goes down if you didn't press Y
-			//Press Both and Elevator stops
+			if(oiGamepad->GetButton(F310::kAButton)){
+				iLeft->Set(-1.0);
+				iRight->Set(-1.0);
+			}
+			if(oiGamepad->GetButton(F310::kYButton)){
+				iLeft->Set(1.0);
+				iRight->Set(1.0);
+			}
+			if(oiGamepad->GetButton(F310::kLeftTrigger)){
+				iLeft->Set(0.0);
+				iRight->Set(0.0);
+			}
+			//////////////////////////////////////////////////
+			if(oiGamepad->GetButton(F310::kRightTrigger)){
+				ipLeft->Set(DoubleSolenoid::kForward);
+				ipRight->Set(DoubleSolenoid::kForward);
+			}
+			if(oiGamepad->GetButton(F310::kRightBumper)){
+				ipLeft->Set(DoubleSolenoid::kReverse);
+				ipRight->Set(DoubleSolenoid::kReverse);
+			}
+			//////////////////////////////////////////////////
+			if(oiGamepad->GetButton(F310::kXButton)){
+				epLeft->Set(DoubleSolenoid::kForward);
+				epRight->Set(DoubleSolenoid::kForward);
+			}
 
-			if(oiGamepad->GetButton(F310::kStartButton))
-						{
-							ElevatorRight->Encoder::Reset();
-							ElevatorLeft->Encoder::Reset();
-						}
+			if(oiGamepad->GetButton(F310::kBButton)){
+				epLeft->Set(DoubleSolenoid::kReverse);
+				epRight->Set(DoubleSolenoid::kReverse);
+			}
 
-						if(oiGamepad->GetButton(F310::kAButton))
-						{
-							rElevatorDistance = ElevatorRight->Encoder::GetDistance();
-							lElevatorDistance = ElevatorLeft->Encoder::GetDistance();
-
-							if((rElevatorDistance < 26) && (lElevatorDistance < 26))
-							{
-								ElevatorTalonRight->Talon::Set(1.0);
-								ElevatorTalonLeft->Talon::Set(1.0);
-							}
-
-							if((rElevatorDistance >= 26) && (lElevatorDistance >= 26))
-							{
-								ElevatorTalonRight->Talon::Set(0.0);
-								ElevatorTalonLeft->Talon::Set(0.0);
-							}
-						}
-
-						if(oiGamepad->GetButton(F310::kBButton))
-						{
-							rElevatorDistance = ElevatorRight->Encoder::GetDistance();
-							lElevatorDistance = ElevatorLeft->Encoder::GetDistance();
-
-							if((rElevatorDistance > 0) && (lElevatorDistance > 0))
-							{
-								ElevatorTalonRight->Talon::Set(-0.5);
-								ElevatorTalonLeft->Talon::Set(-0.5);
-							}
-
-						}
-
-						if(oiGamepad->GetButton(F310::kXButton))
-						{
-							iLeft->Talon::Set(0.5);
-							iRight->Talon::Set(0.5);
-						}
-
-						if(oiGamepad->GetButton(F310::kYButton))
-						{
-							iLeft->Talon::Set(0.0);
-							iRight->Talon::Set(0.0);
-						}
-
-				this->Debug();
-
-					dbDrive->TankDrive(oiLeft->GetY(), oiRight->GetY());
-					if (oiRight->GetRawButton(1) == true)
-						{
-							this->HDrive(oiRight->GetX());
-						}
+			ElevatorTalonLeft->Set(oiGamepad->GetY(F310::kLeftStick));
+			ElevatorTalonRight->Set(oiGamepad->GetY(F310::kRightStick));
 
 
 			}
@@ -326,44 +282,7 @@ public:
 			}
 			drive->TankDrive(0.0, 0.0);
 		}
-		// drive train debug function
-		void dbDebug()
-		{
-			SmartDashboard::PutNumber("dbMiddle:", dbMidEncoder->GetDistance());
-			SmartDashboard::PutNumber("dbLeft:", dbLeftEncoder->GetDistance());
-			SmartDashboard::PutNumber("dbRight:", dbRightEncoder->GetDistance());
-			SmartDashboard::PutNumber("dbGyro:", dbGyro->GetAngle());
-		}
 
-		// elevator debug function
-		void eDebug()
-		{
-			SmartDashboard::PutNumber("ElevatorTalonLeft", ElevatorLeft->GetDistance());
-			SmartDashboard::PutNumber("ElevatorTalonRight", ElevatorRight->GetDistance());
-		}
-		void DebugTeleop()
-		{
-			SmartDashboard::GetNumber("Inches Forward", Distance);
-
-			//Constantly Updates Elevator Encoders
-			SmartDashboard::PutNumber("Left Elevator Encoder", ElevatorLeft->GetDistance());
-			SmartDashboard::PutNumber("Right Elevator Encoder", ElevatorRight->GetDistance());
-
-			//Constantly Updates Drive Base Encoders
-			SmartDashboard::PutNumber("Drive Base Encoder Left", dbLeftEncoder->GetDistance());
-			SmartDashboard::PutNumber("Drive Base Encoder Middle", dbMidEncoder->GetDistance());
-			SmartDashboard::PutNumber("Drive Base Encoder Right", dbRightEncoder->GetDistance());
-
-			//Elevator values
-			SmartDashboard::PutNumber("SafetyUpElevator (Ask A Programmer)", SafetyUpElevator);
-			SmartDashboard::PutNumber("SafetyDownElevator (Ask A Programmer)", SafetyDownElevator);
-		}
-		void Debug()
-		{
-			this->dbDebug();
-			this->eDebug();
-			this->DebugTeleop();
-		}
 
 
 	void Disabled(void)
